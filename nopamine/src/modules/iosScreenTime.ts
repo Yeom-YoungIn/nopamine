@@ -31,3 +31,18 @@ export async function removeIOSShield(): Promise<boolean> {
   if (!isSupported) return false;
   return NopamineModule.removeShield();
 }
+
+export async function syncIOSWidgetData(
+  remainingMinutes: number,
+  allowedMinutes: number,
+  isBlocked: boolean,
+  cooldownUntil: number | null,
+): Promise<void> {
+  if (!isSupported) return;
+  await NopamineModule.syncWidgetData(
+    remainingMinutes,
+    allowedMinutes,
+    isBlocked,
+    cooldownUntil ?? 0,
+  );
+}

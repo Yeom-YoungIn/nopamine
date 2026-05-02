@@ -3,8 +3,8 @@ import {AppState, Platform} from 'react-native';
 import {useTimerStore} from '@store/timerStore';
 import {useAppStore} from '@store/appStore';
 import {getUsageMinutesToday} from '@modules/permissionManager';
-import {syncBlockStateToNative} from '@modules/blockManager';
-import {startIOSMonitoring, stopIOSMonitoring, applyIOSShield, removeIOSShield} from '@modules/iosScreenTime';
+import {syncBlockStateToNative, syncWidgetData} from '@modules/blockManager';
+import {startIOSMonitoring, stopIOSMonitoring, applyIOSShield, removeIOSShield, syncIOSWidgetData} from '@modules/iosScreenTime';
 import {sendWarningNotification, sendBlockedNotification} from '@modules/notificationManager';
 
 const WARNING_MINUTES = 5;
@@ -58,8 +58,19 @@ export function useUsageTracker() {
     // 차단 발동
     if (current.usedMinutes >= todayAllowed) {
       triggerBlock();
-      await syncBlockStateToNative(true, useTimerStore.getState().cooldownUntil);
+      const finalState = useTimerStore.getState();
+      await syncBlockStateToNative(true, finalState.cooldownUntil);
+      syncWidgetData(0, todayAllowed, true, finalState.cooldownUntil);
       await sendBlockedNotification();
+    } else {
+      // 위젯 잔여 시간 갱신
+      const finalState = useTimerStore.getState();
+      syncWidgetData(
+        Math.max(0, todayAllowed - finalState.usedMinutes),
+        todayAllowed,
+        false,
+        null,
+      );
     }
   };
 
@@ -88,8 +99,17 @@ export function useUsageTracker() {
 
     if (usedMinutes >= todayAllowed && !isBlocked) {
       triggerBlock();
+      const finalState = useTimerStore.getState();
       await applyIOSShield();
+      await syncIOSWidgetData(0, todayAllowed, true, finalState.cooldownUntil);
       await sendBlockedNotification();
+    } else {
+      await syncIOSWidgetData(
+        Math.max(0, todayAllowed - usedMinutes),
+        todayAllowed,
+        false,
+        null,
+      );
     }
   };
 

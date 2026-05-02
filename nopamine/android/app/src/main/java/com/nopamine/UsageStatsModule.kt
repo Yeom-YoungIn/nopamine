@@ -115,6 +115,18 @@ class UsageStatsModule(private val reactContext: ReactApplicationContext) :
             .apply()
     }
 
+    /** 위젯 표시용 데이터 저장 + 위젯 강제 갱신 */
+    @ReactMethod
+    fun syncWidgetData(remainingMinutes: Int, allowedMinutes: Int, isBlocked: Boolean, cooldownUntil: Double) {
+        reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE).edit()
+            .putInt("remainingMinutes", remainingMinutes)
+            .putInt("allowedMinutes", allowedMinutes)
+            .putBoolean("isBlocked", isBlocked)
+            .putLong("cooldownUntil", cooldownUntil.toLong())
+            .apply()
+        NopamineWidget.updateAllWidgets(reactContext)
+    }
+
     private fun hasUsageStatsPermissionSync(): Boolean {
         val appOps = reactContext.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

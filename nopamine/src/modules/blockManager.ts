@@ -15,8 +15,27 @@ export async function syncBlockStateToNative(isBlocked: boolean, cooldownUntil: 
     PREFS_KEY,
     JSON.stringify({isBlocked, cooldownUntil: cooldownUntil ?? 0}),
   );
-  // SharedPreferences 직접 쓰기는 NativeModule 통해 처리
   if (UsageStatsModule?.syncBlockState) {
     UsageStatsModule.syncBlockState(isBlocked, cooldownUntil ?? 0);
+  }
+}
+
+/**
+ * 위젯 표시 데이터를 SharedPreferences에 저장 후 위젯 강제 갱신.
+ */
+export function syncWidgetData(
+  remainingMinutes: number,
+  allowedMinutes: number,
+  isBlocked: boolean,
+  cooldownUntil: number | null,
+) {
+  if (Platform.OS !== 'android') return;
+  if (UsageStatsModule?.syncWidgetData) {
+    UsageStatsModule.syncWidgetData(
+      remainingMinutes,
+      allowedMinutes,
+      isBlocked,
+      cooldownUntil ?? 0,
+    );
   }
 }

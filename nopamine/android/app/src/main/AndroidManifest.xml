@@ -55,5 +55,17 @@
         android:exported="false"
         android:foregroundServiceType="specialUse" />
 
+      <!-- 홈 화면 위젯 -->
+      <receiver
+        android:name=".NopamineWidget"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+          android:name="android.appwidget.provider"
+          android:resource="@xml/widget_info" />
+      </receiver>
+
     </application>
 </manifest>

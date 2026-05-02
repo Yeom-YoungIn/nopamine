@@ -29,4 +29,13 @@ RCT_EXTERN_METHOD(
   rejecter:(RCTPromiseRejectBlock)reject
 )
 
+RCT_EXTERN_METHOD(
+  syncWidgetData:(int)remainingMinutes
+  allowedMinutes:(int)allowedMinutes
+  isBlocked:(BOOL)isBlocked
+  cooldownUntil:(double)cooldownUntil
+  resolve:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)rejecter
+)
+
 @end

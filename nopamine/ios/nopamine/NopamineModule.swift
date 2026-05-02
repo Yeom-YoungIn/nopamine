@@ -143,6 +143,29 @@ class NopamineModule: NSObject {
     #endif
   }
 
+  // MARK: - Widget Data Sync
+
+  /// JS → App Group UserDefaults → WidgetKit 갱신
+  @objc func syncWidgetData(
+    _ remainingMinutes: Int,
+    allowedMinutes: Int,
+    isBlocked: Bool,
+    cooldownUntil: Double,
+    resolve: @escaping RCTPromiseResolveBlock,
+    rejecter _: @escaping RCTPromiseRejectBlock
+  ) {
+    let defaults = UserDefaults(suiteName: "group.com.nopamine.shared")
+    defaults?.set(remainingMinutes, forKey: "remainingMinutes")
+    defaults?.set(allowedMinutes, forKey: "allowedMinutes")
+    defaults?.set(isBlocked, forKey: "isBlocked")
+    defaults?.set(cooldownUntil, forKey: "cooldownUntil")
+
+    if #available(iOS 14.0, *) {
+      WidgetCenter.shared.reloadAllTimelines()
+    }
+    resolve(true)
+  }
+
   // MARK: - Private
 
   private func saveSettings(allowedMinutes: Int) {
