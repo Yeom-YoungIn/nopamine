@@ -5,6 +5,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
 import {useTimerStore} from './src/store/timerStore';
 import {useAppStore} from './src/store/appStore';
+import {useStatsStore} from './src/store/statsStore';
 import {useUsageTracker} from './src/hooks/useUsageTracker';
 
 function AppInner() {
@@ -15,11 +16,13 @@ function AppInner() {
 export default function App() {
   const loadTimer = useTimerStore(s => s.loadFromStorage);
   const loadApps = useAppStore(s => s.loadFromStorage);
+  const loadStats = useStatsStore(s => s.loadFromStorage);
 
   useEffect(() => {
     loadTimer();
     loadApps();
-  }, [loadTimer, loadApps]);
+    loadStats();
+  }, [loadTimer, loadApps, loadStats]);
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
