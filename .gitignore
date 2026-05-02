@@ -1,0 +1,30 @@
+# Planning docs
+agent/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# React Native
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Android
+nopamine/android/app/build/
+nopamine/android/.gradle/
+nopamine/android/local.properties
+nopamine/android/keystores/
+
+# iOS
+nopamine/ios/build/
+nopamine/ios/Pods/
+nopamine/ios/*.xcworkspace
+
+# Env
+.env
+.env.local
+.env.*
