@@ -5,11 +5,14 @@ import {useAppStore} from '@store/appStore';
 import {getUsageMinutesToday} from '@modules/permissionManager';
 import {syncBlockStateToNative} from '@modules/blockManager';
 import {startIOSMonitoring, stopIOSMonitoring, applyIOSShield, removeIOSShield} from '@modules/iosScreenTime';
+import {sendWarningNotification, sendBlockedNotification} from '@modules/notificationManager';
+
+const WARNING_MINUTES = 5;
 
 export function useUsageTracker() {
   const {
-    allowedMinutes, usedMinutes, isBlocked, cooldownUntil,
-    triggerBlock, clearBlock, addUsedMinutes, resetIfNewDay,
+    getTodayAllowedMinutes, usedMinutes, isBlocked, cooldownUntil,
+    warningFired, triggerBlock, clearBlock, addUsedMinutes, resetIfNewDay, setWarningFired,
   } = useTimerStore();
   const {getEnabledApps} = useAppStore();
   const lastSyncRef = useRef(0);
@@ -17,6 +20,7 @@ export function useUsageTracker() {
 
   const syncAndroid = async () => {
     resetIfNewDay();
+    const todayAllowed = getTodayAllowedMinutes();
 
     if (isBlocked && cooldownUntil && Date.now() > cooldownUntil) {
       clearBlock();
@@ -42,14 +46,26 @@ export function useUsageTracker() {
       addUsedMinutes(totalMinutes - store.usedMinutes);
     }
 
-    if (useTimerStore.getState().usedMinutes >= allowedMinutes) {
+    const current = useTimerStore.getState();
+
+    // 5분 전 경고
+    const remaining = todayAllowed - current.usedMinutes;
+    if (!current.warningFired && remaining <= WARNING_MINUTES && remaining > 0) {
+      setWarningFired();
+      await sendWarningNotification(remaining);
+    }
+
+    // 차단 발동
+    if (current.usedMinutes >= todayAllowed) {
       triggerBlock();
       await syncBlockStateToNative(true, useTimerStore.getState().cooldownUntil);
+      await sendBlockedNotification();
     }
   };
 
   const syncIOS = async () => {
     resetIfNewDay();
+    const todayAllowed = getTodayAllowedMinutes();
 
     if (isBlocked && cooldownUntil && Date.now() > cooldownUntil) {
       clearBlock();
@@ -60,13 +76,20 @@ export function useUsageTracker() {
     if (!iosStartedRef.current) {
       const apps = getEnabledApps();
       const bundleIds = apps.map(a => a.iosBundleId);
-      await startIOSMonitoring(allowedMinutes, bundleIds);
+      await startIOSMonitoring(todayAllowed, bundleIds);
       iosStartedRef.current = true;
     }
 
-    if (usedMinutes >= allowedMinutes && !isBlocked) {
+    const remaining = todayAllowed - usedMinutes;
+    if (!warningFired && remaining <= WARNING_MINUTES && remaining > 0) {
+      setWarningFired();
+      await sendWarningNotification(remaining);
+    }
+
+    if (usedMinutes >= todayAllowed && !isBlocked) {
       triggerBlock();
       await applyIOSShield();
+      await sendBlockedNotification();
     }
   };
 

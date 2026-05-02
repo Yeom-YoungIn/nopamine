@@ -1,19 +1,29 @@
 import {create} from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface DaySchedule {
+  // 0=일, 1=월 ... 6=토  (null이면 기본값 allowedMinutes 사용)
+  overrides: Record<number, number | null>;
+}
+
 interface TimerState {
-  allowedMinutes: number;
+  allowedMinutes: number;       // 기본 허용 시간
   cooldownMinutes: number;
   usedMinutes: number;
   isBlocked: boolean;
   cooldownUntil: number | null;
   lastResetDate: string;
+  daySchedule: DaySchedule;
+  warningFired: boolean;        // 오늘 5분 전 경고 발송 여부
 
+  getTodayAllowedMinutes: () => number;
   setAllowedMinutes: (minutes: number) => void;
+  setDayOverride: (day: number, minutes: number | null) => void;
   setCooldownMinutes: (minutes: number) => void;
   addUsedMinutes: (minutes: number) => void;
   triggerBlock: () => void;
   clearBlock: () => void;
+  setWarningFired: () => void;
   resetIfNewDay: () => void;
   loadFromStorage: () => Promise<void>;
 }
@@ -29,10 +39,26 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   isBlocked: false,
   cooldownUntil: null,
   lastResetDate: todayString(),
+  daySchedule: {overrides: {}},
+  warningFired: false,
+
+  getTodayAllowedMinutes: () => {
+    const {allowedMinutes, daySchedule} = get();
+    const dow = new Date().getDay();
+    const override = daySchedule.overrides[dow];
+    return override ?? allowedMinutes;
+  },
 
   setAllowedMinutes: minutes => {
     set({allowedMinutes: minutes});
     AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({allowedMinutes: minutes}));
+  },
+
+  setDayOverride: (day, minutes) => {
+    const overrides = {...get().daySchedule.overrides, [day]: minutes};
+    const daySchedule = {overrides};
+    set({daySchedule});
+    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({daySchedule}));
   },
 
   setCooldownMinutes: minutes => {
@@ -57,13 +83,18 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({isBlocked: false, cooldownUntil: null}));
   },
 
+  setWarningFired: () => {
+    set({warningFired: true});
+    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({warningFired: true}));
+  },
+
   resetIfNewDay: () => {
     const today = todayString();
     if (get().lastResetDate !== today) {
-      set({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today});
+      set({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today, warningFired: false});
       AsyncStorage.mergeItem(
         STORAGE_KEY,
-        JSON.stringify({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today}),
+        JSON.stringify({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today, warningFired: false}),
       );
     }
   },
@@ -78,11 +109,13 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       saved.isBlocked = false;
       saved.cooldownUntil = null;
       saved.lastResetDate = today;
+      saved.warningFired = false;
     }
     if (saved.cooldownUntil && Date.now() > saved.cooldownUntil) {
       saved.isBlocked = false;
       saved.cooldownUntil = null;
     }
+    if (!saved.daySchedule) saved.daySchedule = {overrides: {}};
     set(saved);
   },
 }));
