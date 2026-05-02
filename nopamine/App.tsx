@@ -5,6 +5,12 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
 import {useTimerStore} from './src/store/timerStore';
 import {useAppStore} from './src/store/appStore';
+import {useUsageTracker} from './src/hooks/useUsageTracker';
+
+function AppInner() {
+  useUsageTracker();
+  return <RootNavigator />;
+}
 
 export default function App() {
   const loadTimer = useTimerStore(s => s.loadFromStorage);
@@ -19,7 +25,7 @@ export default function App() {
     <GestureHandlerRootView style={{flex: 1}}>
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
-        <RootNavigator />
+        <AppInner />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
