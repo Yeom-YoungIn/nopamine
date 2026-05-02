@@ -4,32 +4,26 @@ import {useTimerStore} from '@store/timerStore';
 import {useAppStore} from '@store/appStore';
 import {getUsageMinutesToday} from '@modules/permissionManager';
 import {syncBlockStateToNative} from '@modules/blockManager';
+import {startIOSMonitoring, stopIOSMonitoring, applyIOSShield, removeIOSShield} from '@modules/iosScreenTime';
 
-/**
- * 앱이 포그라운드로 돌아올 때마다 UsageStats를 조회해 누적 사용 시간을 갱신.
- * 허용 시간 초과 시 차단 발동 + 네이티브 동기화.
- */
 export function useUsageTracker() {
-  const {allowedMinutes, usedMinutes, isBlocked, cooldownUntil, triggerBlock, clearBlock, addUsedMinutes, resetIfNewDay} =
-    useTimerStore();
+  const {
+    allowedMinutes, usedMinutes, isBlocked, cooldownUntil,
+    triggerBlock, clearBlock, addUsedMinutes, resetIfNewDay,
+  } = useTimerStore();
   const {getEnabledApps} = useAppStore();
   const lastSyncRef = useRef(0);
+  const iosStartedRef = useRef(false);
 
-  const syncUsage = async () => {
-    if (Platform.OS !== 'android') return;
-
+  const syncAndroid = async () => {
     resetIfNewDay();
 
-    // 쿨다운 만료 체크
     if (isBlocked && cooldownUntil && Date.now() > cooldownUntil) {
       clearBlock();
       await syncBlockStateToNative(false, null);
       return;
     }
-
     if (isBlocked) return;
-
-    // 30초마다 UsageStats 조회 (배터리 절약)
     if (Date.now() - lastSyncRef.current < 30_000) return;
     lastSyncRef.current = Date.now();
 
@@ -37,17 +31,15 @@ export function useUsageTracker() {
     let totalMinutes = 0;
     for (const app of apps) {
       try {
-        const mins = await getUsageMinutesToday(app.androidPackage);
-        totalMinutes += mins;
+        totalMinutes += await getUsageMinutesToday(app.androidPackage);
       } catch {
-        // 권한 없는 경우 skip
+        // 권한 미허용 시 skip
       }
     }
 
     const store = useTimerStore.getState();
     if (totalMinutes > store.usedMinutes) {
-      const diff = totalMinutes - store.usedMinutes;
-      addUsedMinutes(diff);
+      addUsedMinutes(totalMinutes - store.usedMinutes);
     }
 
     if (useTimerStore.getState().usedMinutes >= allowedMinutes) {
@@ -56,15 +48,41 @@ export function useUsageTracker() {
     }
   };
 
+  const syncIOS = async () => {
+    resetIfNewDay();
+
+    if (isBlocked && cooldownUntil && Date.now() > cooldownUntil) {
+      clearBlock();
+      await removeIOSShield();
+      return;
+    }
+
+    if (!iosStartedRef.current) {
+      const apps = getEnabledApps();
+      const bundleIds = apps.map(a => a.iosBundleId);
+      await startIOSMonitoring(allowedMinutes, bundleIds);
+      iosStartedRef.current = true;
+    }
+
+    if (usedMinutes >= allowedMinutes && !isBlocked) {
+      triggerBlock();
+      await applyIOSShield();
+    }
+  };
+
   useEffect(() => {
-    syncUsage();
+    const sync = Platform.OS === 'android' ? syncAndroid : syncIOS;
+
+    sync();
     const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') syncUsage();
+      if (state === 'active') sync();
     });
-    const interval = setInterval(syncUsage, 30_000);
+    const interval = setInterval(sync, 30_000);
+
     return () => {
       sub.remove();
       clearInterval(interval);
+      if (Platform.OS === 'ios') stopIOSMonitoring();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
