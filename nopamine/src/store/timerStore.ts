@@ -32,6 +32,25 @@ const STORAGE_KEY = '@nopamine:timer';
 
 const todayString = () => new Date().toISOString().slice(0, 10);
 
+const persistableKeys: (keyof TimerState)[] = [
+  'allowedMinutes',
+  'cooldownMinutes',
+  'usedMinutes',
+  'isBlocked',
+  'cooldownUntil',
+  'lastResetDate',
+  'daySchedule',
+  'warningFired',
+];
+
+function persist(state: TimerState) {
+  const snapshot: Record<string, unknown> = {};
+  for (const k of persistableKeys) {
+    snapshot[k] = state[k];
+  }
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+}
+
 export const useTimerStore = create<TimerState>((set, get) => ({
   allowedMinutes: 30,
   cooldownMinutes: 30,
@@ -51,51 +70,48 @@ export const useTimerStore = create<TimerState>((set, get) => ({
 
   setAllowedMinutes: minutes => {
     set({allowedMinutes: minutes});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({allowedMinutes: minutes}));
+    persist(get());
   },
 
   setDayOverride: (day, minutes) => {
     const overrides = {...get().daySchedule.overrides, [day]: minutes};
     const daySchedule = {overrides};
     set({daySchedule});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({daySchedule}));
+    persist(get());
   },
 
   setCooldownMinutes: minutes => {
     set({cooldownMinutes: minutes});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({cooldownMinutes: minutes}));
+    persist(get());
   },
 
   addUsedMinutes: minutes => {
     const next = get().usedMinutes + minutes;
     set({usedMinutes: next});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({usedMinutes: next}));
+    persist(get());
   },
 
   triggerBlock: () => {
     const cooldownUntil = Date.now() + get().cooldownMinutes * 60 * 1000;
     set({isBlocked: true, cooldownUntil});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({isBlocked: true, cooldownUntil}));
+    persist(get());
   },
 
   clearBlock: () => {
     set({isBlocked: false, cooldownUntil: null});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({isBlocked: false, cooldownUntil: null}));
+    persist(get());
   },
 
   setWarningFired: () => {
     set({warningFired: true});
-    AsyncStorage.mergeItem(STORAGE_KEY, JSON.stringify({warningFired: true}));
+    persist(get());
   },
 
   resetIfNewDay: () => {
     const today = todayString();
     if (get().lastResetDate !== today) {
       set({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today, warningFired: false});
-      AsyncStorage.mergeItem(
-        STORAGE_KEY,
-        JSON.stringify({usedMinutes: 0, isBlocked: false, cooldownUntil: null, lastResetDate: today, warningFired: false}),
-      );
+      persist(get());
     }
   },
 
