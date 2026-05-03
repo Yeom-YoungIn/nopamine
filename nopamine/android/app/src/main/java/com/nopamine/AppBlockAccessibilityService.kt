@@ -9,29 +9,27 @@ class AppBlockAccessibilityService : AccessibilityService() {
     private val blockedPackages = setOf(
         "com.google.android.youtube",
         "com.instagram.android",
-        "com.zhiliaoapp.musically",
-        "com.google.android.calendar" // 테스트용
+        "com.zhiliaoapp.musically"
     )
 
+    // 마지막 홈 액션 시각 — 연속 이벤트에 의한 중복 발동 방지용 (짧게 유지)
     private var lastBlockedAt = 0L
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        val type = event?.eventType ?: return
-        if (type != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-            type != AccessibilityEvent.TYPE_WINDOWS_CHANGED) return
+        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val pkg = event.packageName?.toString() ?: return
         if (pkg !in blockedPackages) return
 
         val now = System.currentTimeMillis()
-        if (now - lastBlockedAt < 1500) return
+        if (now - lastBlockedAt < 300) return   // 동일 이벤트 중복 방지만, 재실행은 막지 않음
 
         val prefs = getSharedPreferences("nopamine", MODE_PRIVATE)
         val isBlocked = prefs.getBoolean("isBlocked", false)
         val cooldownUntil = prefs.getLong("cooldownUntil", 0L)
 
         val shouldBlock = isBlocked && (cooldownUntil == 0L || now < cooldownUntil)
-        Log.d(TAG, "pkg=$pkg shouldBlock=$shouldBlock isBlocked=$isBlocked")
+        Log.d(TAG, "pkg=$pkg isBlocked=$isBlocked cooldownUntil=$cooldownUntil shouldBlock=$shouldBlock")
 
         if (!shouldBlock) return
 
