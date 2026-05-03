@@ -9,6 +9,13 @@ const PREFS_KEY = '@nopamine:block';
  * 차단 상태를 Android SharedPreferences에 동기화.
  * AccessibilityService가 JS 없이도 차단 여부를 읽을 수 있도록 네이티브에 저장.
  */
+export function syncIsEnabledToNative(isEnabled: boolean) {
+  if (Platform.OS !== 'android') return;
+  if (UsageStatsModule?.syncIsEnabled) {
+    UsageStatsModule.syncIsEnabled(isEnabled);
+  }
+}
+
 export async function syncBlockStateToNative(isBlocked: boolean, cooldownUntil: number | null) {
   if (Platform.OS !== 'android') return;
   await AsyncStorage.setItem(

@@ -115,6 +115,14 @@ class UsageStatsModule(private val reactContext: ReactApplicationContext) :
             .apply()
     }
 
+    /** 기능 활성화 여부를 SharedPreferences에 저장 */
+    @ReactMethod
+    fun syncIsEnabled(isEnabled: Boolean) {
+        reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE).edit()
+            .putBoolean("isEnabled", isEnabled)
+            .apply()
+    }
+
     /** 위젯 표시용 데이터 저장 + 위젯 강제 갱신 */
     @ReactMethod
     fun syncWidgetData(remainingMinutes: Int, allowedMinutes: Int, isBlocked: Boolean, cooldownUntil: Double) {

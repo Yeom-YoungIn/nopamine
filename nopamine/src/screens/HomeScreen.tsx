@@ -5,7 +5,7 @@ import {useAppStore} from '@store/appStore';
 import {useStatsStore} from '@store/statsStore';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../navigation/types';
-import {syncBlockStateToNative, syncWidgetData} from '@modules/blockManager';
+import {syncBlockStateToNative, syncWidgetData, syncIsEnabledToNative} from '@modules/blockManager';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -42,8 +42,8 @@ export default function HomeScreen({navigation}: Props) {
 
   const handleToggle = async (v: boolean) => {
     setEnabled(v);
+    syncIsEnabledToNative(v);
     if (!v) {
-      // 비활성화 시 차단 상태 즉시 해제
       clearBlock();
       await syncBlockStateToNative(false, null);
       syncWidgetData(getTodayAllowedMinutes(), getTodayAllowedMinutes(), false, null);
