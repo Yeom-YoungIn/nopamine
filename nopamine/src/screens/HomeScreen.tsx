@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Switch} from 'react-native';
 import {useTimerStore} from '@store/timerStore';
 import {useAppStore} from '@store/appStore';
 import {useStatsStore} from '@store/statsStore';
@@ -16,7 +16,7 @@ export default function HomeScreen({navigation}: Props) {
     allowedMinutes, usedMinutes, isBlocked, cooldownUntil, cooldownMinutes,
     resetIfNewDay, triggerBlock, clearBlock, addUsedMinutes, getTodayAllowedMinutes,
   } = useTimerStore();
-  const {getEnabledApps} = useAppStore();
+  const {getEnabledApps, isEnabled, setEnabled} = useAppStore();
   const {streak, recordToday, loadFromStorage} = useStatsStore();
 
   const [devVisible, setDevVisible] = useState(false);
@@ -39,6 +39,16 @@ export default function HomeScreen({navigation}: Props) {
   const cooldownRemainMin = cooldownUntil
     ? Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 60000))
     : 0;
+
+  const handleToggle = async (v: boolean) => {
+    setEnabled(v);
+    if (!v) {
+      // 비활성화 시 차단 상태 즉시 해제
+      clearBlock();
+      await syncBlockStateToNative(false, null);
+      syncWidgetData(getTodayAllowedMinutes(), getTodayAllowedMinutes(), false, null);
+    }
+  };
 
   const handleTitlePress = () => {
     titleTapCount.current += 1;
@@ -100,14 +110,28 @@ export default function HomeScreen({navigation}: Props) {
           <TouchableOpacity onPress={handleTitlePress} activeOpacity={1}>
             <Text style={styles.title}>Nopamine</Text>
           </TouchableOpacity>
-          {streak > 0 && (
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakText}>🔥 {streak}일 연속</Text>
-            </View>
-          )}
+          <View style={styles.headerRight}>
+            {streak > 0 && (
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakText}>🔥 {streak}일 연속</Text>
+              </View>
+            )}
+            <Switch
+              value={isEnabled}
+              onValueChange={handleToggle}
+              trackColor={{false: '#2a2a2a', true: '#166534'}}
+              thumbColor={isEnabled ? '#4ade80' : '#555'}
+            />
+          </View>
         </View>
 
-        <View style={[styles.mainCard, isBlocked && styles.mainCardBlocked]}>
+        {!isEnabled && (
+          <View style={styles.disabledBanner}>
+            <Text style={styles.disabledBannerText}>차단 기능이 꺼져 있습니다</Text>
+          </View>
+        )}
+
+        <View style={[styles.mainCard, isBlocked && styles.mainCardBlocked, !isEnabled && styles.mainCardDisabled]}>
           <Text style={styles.cardLabel}>{isBlocked ? '차단 중' : '남은 시간'}</Text>
           <Text style={[styles.mainTimer, isBlocked && styles.mainTimerBlocked]}>
             {isBlocked ? `${cooldownRemainMin}분 후 해제` : `${remainingMinutes}분`}
@@ -160,6 +184,7 @@ export default function HomeScreen({navigation}: Props) {
             </View>
 
             <View style={dev.stateBox}>
+              <Text style={dev.stateText}>isEnabled: <Text style={isEnabled ? dev.green : dev.red}>{String(isEnabled)}</Text></Text>
               <Text style={dev.stateText}>isBlocked: <Text style={isBlocked ? dev.red : dev.green}>{String(isBlocked)}</Text></Text>
               <Text style={dev.stateText}>usedMinutes: {usedMinutes} / {allowedMinutes}</Text>
               <Text style={dev.stateText}>cooldownMinutes: {cooldownMinutes}</Text>
@@ -190,9 +215,13 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#0f0f0f'},
   content: {padding: 24, paddingBottom: 40},
   header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24},
+  headerRight: {flexDirection: 'row', alignItems: 'center', gap: 10},
   title: {fontSize: 28, fontWeight: '800', color: '#fff'},
   streakBadge: {backgroundColor: '#1a1a1a', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6},
   streakText: {fontSize: 14, color: '#f97316', fontWeight: '700'},
+  disabledBanner: {backgroundColor: '#1a1a1a', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#333'},
+  disabledBannerText: {fontSize: 14, color: '#555', textAlign: 'center'},
+  mainCardDisabled: {opacity: 0.4},
   mainCard: {
     backgroundColor: '#1a1a1a', borderRadius: 20, padding: 24, marginBottom: 16,
     borderWidth: 1, borderColor: '#2a2a2a',

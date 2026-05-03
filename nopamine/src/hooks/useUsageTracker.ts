@@ -14,11 +14,12 @@ export function useUsageTracker() {
     getTodayAllowedMinutes, usedMinutes, isBlocked, cooldownUntil,
     warningFired, triggerBlock, clearBlock, addUsedMinutes, resetIfNewDay, setWarningFired,
   } = useTimerStore();
-  const {getEnabledApps} = useAppStore();
+  const {getEnabledApps, isEnabled} = useAppStore();
   const lastSyncRef = useRef(0);
   const iosStartedRef = useRef(false);
 
   const syncAndroid = async () => {
+    if (!isEnabled) return;
     resetIfNewDay();
     const todayAllowed = getTodayAllowedMinutes();
 
@@ -75,6 +76,7 @@ export function useUsageTracker() {
   };
 
   const syncIOS = async () => {
+    if (!isEnabled) return;
     resetIfNewDay();
     const todayAllowed = getTodayAllowedMinutes();
 
