@@ -7,6 +7,7 @@ import {useTimerStore} from './src/store/timerStore';
 import {useAppStore} from './src/store/appStore';
 import {useStatsStore} from './src/store/statsStore';
 import {useUsageTracker} from './src/hooks/useUsageTracker';
+import {colors} from '@theme/ui';
 
 function AppInner() {
   useUsageTracker();
@@ -27,7 +28,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor="#0f0f0f" />
+        <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
         <AppInner />
       </SafeAreaProvider>
     </GestureHandlerRootView>

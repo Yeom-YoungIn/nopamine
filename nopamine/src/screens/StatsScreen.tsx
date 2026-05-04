@@ -2,6 +2,7 @@ import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import {useStatsStore} from '@store/statsStore';
 import {useTimerStore} from '@store/timerStore';
+import {colors, metrics, shadows} from '@theme/ui';
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -14,48 +15,58 @@ export default function StatsScreen() {
   }, [loadFromStorage]);
 
   const week = getLast7Days();
-  const maxMinutes = Math.max(...week.map(d => d.usedMinutes), 1);
-  const todayPercent = Math.min(100, Math.round((usedMinutes / allowedMinutes) * 100));
-  const weekGoalDays = week.filter(d => d.goalMet).length;
+  const maxMinutes = Math.max(...week.map(day => day.usedMinutes), 1);
+  const todayPercent =
+    allowedMinutes > 0 ? Math.min(100, Math.round((usedMinutes / allowedMinutes) * 100)) : 0;
+  const weekGoalDays = week.filter(day => day.goalMet).length;
+  const avgMinutes = Math.round(week.reduce((sum, day) => sum + day.usedMinutes, 0) / week.length);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>통계 📊</Text>
+      <Text style={styles.eyebrow}>weekly snapshot</Text>
+      <Text style={styles.title}>기록은 간단하게, 흐름은 선명하게</Text>
+      <Text style={styles.subtitle}>핵심 숫자만 남기고 통계 구조를 단순화했습니다.</Text>
 
       <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{todayPercent}%</Text>
-          <Text style={styles.summaryLabel}>오늘 사용률</Text>
+        <View style={[styles.summaryCard, styles.summaryCardDark]}>
+          <Text style={styles.summaryValueLight}>{todayPercent}%</Text>
+          <Text style={styles.summaryLabelLight}>오늘 사용률</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={[styles.summaryValue, styles.summaryValueGreen]}>{weekGoalDays}/7</Text>
-          <Text style={styles.summaryLabel}>이번 주 목표</Text>
+          <Text style={styles.summaryValue}>{weekGoalDays}/7</Text>
+          <Text style={styles.summaryLabel}>목표 달성일</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={[styles.summaryValue, styles.summaryValueOrange]}>🔥{streak}</Text>
-          <Text style={styles.summaryLabel}>연속 달성</Text>
+          <Text style={styles.summaryValue}>{streak}일</Text>
+          <Text style={styles.summaryLabel}>연속 집중</Text>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>최근 7일 사용량</Text>
-        <View style={styles.barChart}>
-          {week.map((day, i) => {
-            const barHeight = Math.max(4, Math.round((day.usedMinutes / maxMinutes) * 100));
-            const isGoalMet = day.goalMet;
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>최근 7일</Text>
+          <Text style={styles.cardMeta}>평균 {avgMinutes}분</Text>
+        </View>
+        <View style={styles.chart}>
+          {week.map((day, index) => {
+            const barHeight = Math.max(8, Math.round((day.usedMinutes / maxMinutes) * 132));
             const label = DAY_LABELS[new Date(day.date + 'T00:00:00').getDay()];
-            const isToday = i === 6;
+            const isToday = index === week.length - 1;
             return (
-              <View key={day.date} style={styles.barCol}>
-                <Text style={styles.barMinutes}>
+              <View key={day.date} style={styles.barColumn}>
+                <Text style={styles.barValue}>
                   {day.usedMinutes > 0 ? `${day.usedMinutes}` : ''}
                 </Text>
-                <View style={styles.barWrapper}>
+                <View style={styles.barTrack}>
                   <View
                     style={[
                       styles.bar,
                       {height: barHeight},
-                      isGoalMet ? styles.barGood : day.usedMinutes > 0 ? styles.barBad : styles.barEmpty,
+                      day.goalMet
+                        ? styles.barGood
+                        : day.usedMinutes > 0
+                        ? styles.barAlert
+                        : styles.barIdle,
                     ]}
                   />
                 </View>
@@ -67,19 +78,34 @@ export default function StatsScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>오늘 사용 현황</Text>
-        <View style={styles.progressBg}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>오늘 현황</Text>
+          <Text style={styles.cardMeta}>
+            {usedMinutes} / {allowedMinutes}분
+          </Text>
+        </View>
+        <View style={styles.progressTrack}>
           <View
             style={[
               styles.progressFill,
               {width: `${todayPercent}%` as `${number}%`},
-              todayPercent >= 100 && styles.progressOver,
+              todayPercent >= 100 && styles.progressFillAlert,
             ]}
           />
         </View>
-        <View style={styles.progressDetailRow}>
-          <Text style={styles.progressDetail}>{usedMinutes}분 사용</Text>
-          <Text style={styles.progressDetail}>{allowedMinutes}분 허용</Text>
+        <View style={styles.infoRow}>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>사용</Text>
+            <Text style={styles.infoValue}>{usedMinutes}분</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>허용</Text>
+            <Text style={styles.infoValue}>{allowedMinutes}분</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoLabel}>잔여</Text>
+            <Text style={styles.infoValue}>{Math.max(0, allowedMinutes - usedMinutes)}분</Text>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -87,42 +113,92 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F6F4FF'},
-  content: {padding: 24, paddingBottom: 40},
-  title: {fontSize: 28, fontWeight: '800', color: '#1F0A3A', marginBottom: 20},
+  container: {flex: 1, backgroundColor: colors.background},
+  content: {padding: metrics.screenPadding, paddingBottom: 40},
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accentStrong,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+  title: {fontSize: 32, lineHeight: 36, fontWeight: '800', color: colors.text, letterSpacing: -1},
+  subtitle: {
+    marginTop: 10,
+    marginBottom: 22,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textMuted,
+  },
   summaryRow: {flexDirection: 'row', gap: 10, marginBottom: 16},
   summaryCard: {
-    flex: 1, backgroundColor: '#fff',
-    borderRadius: 18, padding: 16, alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 8,
+    flex: 1,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
-  summaryValue: {fontSize: 22, fontWeight: '800', color: '#7C3AED', marginBottom: 6},
-  summaryValueGreen: {color: '#10B981'},
-  summaryValueOrange: {color: '#F97316'},
-  summaryLabel: {fontSize: 11, color: '#9CA3AF', textAlign: 'center', fontWeight: '600'},
+  summaryCardDark: {
+    backgroundColor: colors.text,
+    borderColor: colors.text,
+  },
+  summaryValue: {fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 8},
+  summaryValueLight: {fontSize: 24, fontWeight: '800', color: colors.white, marginBottom: 8},
+  summaryLabel: {fontSize: 12, color: colors.textMuted},
+  summaryLabelLight: {fontSize: 12, color: '#FFFFFFB3'},
   card: {
-    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 16,
-    elevation: 1,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 8,
+    backgroundColor: colors.card,
+    borderRadius: metrics.cardRadius,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+    ...shadows.soft,
   },
-  cardLabel: {fontSize: 13, color: '#9CA3AF', marginBottom: 18, fontWeight: '600'},
-  barChart: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140},
-  barCol: {alignItems: 'center', flex: 1},
-  barMinutes: {fontSize: 9, color: '#D1D5DB', marginBottom: 4, height: 12},
-  barWrapper: {height: 100, justifyContent: 'flex-end'},
-  bar: {width: 22, borderRadius: 6},
-  barGood: {backgroundColor: '#7C3AED'},
-  barBad: {backgroundColor: '#F43F5E'},
-  barEmpty: {backgroundColor: '#F3F0FF'},
-  barLabel: {fontSize: 12, color: '#D1D5DB', marginTop: 8},
-  barLabelToday: {color: '#7C3AED', fontWeight: '800'},
-  progressBg: {
-    height: 12, backgroundColor: '#F3F0FF', borderRadius: 8,
-    overflow: 'hidden', marginBottom: 10,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
   },
-  progressFill: {height: '100%', backgroundColor: '#7C3AED', borderRadius: 8},
-  progressOver: {backgroundColor: '#F43F5E'},
-  progressDetailRow: {flexDirection: 'row', justifyContent: 'space-between'},
-  progressDetail: {fontSize: 13, color: '#9CA3AF'},
+  cardTitle: {fontSize: 18, fontWeight: '700', color: colors.text},
+  cardMeta: {fontSize: 13, color: colors.textFaint},
+  chart: {flexDirection: 'row', alignItems: 'flex-end', height: 170, gap: 6},
+  barColumn: {flex: 1, alignItems: 'center'},
+  barValue: {fontSize: 10, height: 16, color: colors.textFaint, marginBottom: 6},
+  barTrack: {
+    width: '100%',
+    height: 132,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 18,
+    paddingBottom: 6,
+  },
+  bar: {width: 22, borderRadius: 12},
+  barGood: {backgroundColor: colors.accent},
+  barAlert: {backgroundColor: colors.danger},
+  barIdle: {backgroundColor: '#D8D0C4'},
+  barLabel: {marginTop: 8, fontSize: 12, color: colors.textFaint},
+  barLabelToday: {color: colors.text, fontWeight: '800'},
+  progressTrack: {
+    height: 12,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: metrics.pillRadius,
+    overflow: 'hidden',
+  },
+  progressFill: {height: '100%', backgroundColor: colors.accent, borderRadius: metrics.pillRadius},
+  progressFillAlert: {backgroundColor: colors.danger},
+  infoRow: {flexDirection: 'row', gap: 10, marginTop: 20},
+  infoBlock: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceMuted,
+    padding: 14,
+  },
+  infoLabel: {fontSize: 12, color: colors.textMuted, marginBottom: 6},
+  infoValue: {fontSize: 18, fontWeight: '700', color: colors.text},
 });

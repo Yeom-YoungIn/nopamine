@@ -1,5 +1,6 @@
-import React, {useState, useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, TextInput} from 'react-native';
+import {colors, metrics, shadows} from '@theme/ui';
 
 interface Props {
   onSolve: () => void;
@@ -31,7 +32,7 @@ function generateProblem(): {question: string; answer: number} {
 }
 
 export default function MathChallenge({onSolve, onCancel}: Props) {
-  const problem = useMemo(generateProblem, []);
+  const problem = useMemo(() => generateProblem(), []);
   const [input, setInput] = useState('');
   const [wrong, setWrong] = useState(false);
 
@@ -48,11 +49,9 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
   return (
     <View style={styles.overlay}>
       <View style={styles.card}>
-        <View style={styles.badgeWrap}>
-          <Text style={styles.badge}>🧮 수학 챌린지</Text>
-        </View>
-        <Text style={styles.title}>잠금 해제</Text>
-        <Text style={styles.desc}>정답을 맞히면 쿨다운을 건너뛸 수 있어요!</Text>
+        <Text style={styles.eyebrow}>challenge</Text>
+        <Text style={styles.title}>잠금 해제 문제</Text>
+        <Text style={styles.desc}>정답을 맞히면 쿨다운 없이 바로 돌아갈 수 있습니다.</Text>
 
         <View style={styles.questionBox}>
           <Text style={styles.question}>{problem.question}</Text>
@@ -64,18 +63,19 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
           value={input}
           onChangeText={setInput}
           placeholder="정답 입력"
-          placeholderTextColor="#D1D5DB"
+          placeholderTextColor={colors.textFaint}
           maxLength={6}
           returnKeyType="done"
           onSubmitEditing={submit}
         />
-        {wrong && <Text style={styles.wrongText}>😅 틀렸어요, 다시 시도해봐요!</Text>}
 
-        <TouchableOpacity style={styles.button} onPress={submit}>
-          <Text style={styles.buttonText}>확인</Text>
+        {wrong && <Text style={styles.wrongText}>정답이 아닙니다. 다시 입력해 주세요.</Text>}
+
+        <TouchableOpacity style={styles.primaryButton} onPress={submit}>
+          <Text style={styles.primaryButtonText}>확인</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-          <Text style={styles.cancelText}>취소</Text>
+        <TouchableOpacity style={styles.secondaryButton} onPress={onCancel}>
+          <Text style={styles.secondaryButtonText}>취소</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -84,45 +84,73 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center', alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 100,
+    padding: 24,
   },
   card: {
-    backgroundColor: '#fff', borderRadius: 28, padding: 28,
-    width: '88%', alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.15, shadowRadius: 24,
+    width: '100%',
+    backgroundColor: colors.card,
+    borderRadius: 28,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
   },
-  badgeWrap: {marginBottom: 16},
-  badge: {
-    fontSize: 13, color: '#7C3AED', fontWeight: '700',
-    backgroundColor: '#F3F0FF', paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, overflow: 'hidden',
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accentStrong,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 10,
   },
-  title: {fontSize: 22, fontWeight: '800', color: '#1F0A3A', marginBottom: 8},
-  desc: {fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginBottom: 24, lineHeight: 18},
+  title: {fontSize: 26, fontWeight: '800', color: colors.text, marginBottom: 8},
+  desc: {fontSize: 14, lineHeight: 21, color: colors.textMuted, marginBottom: 20},
   questionBox: {
-    backgroundColor: '#F6F4FF', borderRadius: 18, paddingVertical: 20,
-    paddingHorizontal: 32, marginBottom: 24, width: '100%', alignItems: 'center',
+    borderRadius: 22,
+    paddingVertical: 24,
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    marginBottom: 18,
   },
-  question: {fontSize: 38, fontWeight: '800', color: '#7C3AED'},
+  question: {fontSize: 40, fontWeight: '800', color: colors.text, letterSpacing: -1.2},
   input: {
-    width: '100%', backgroundColor: '#F9FAFB', borderRadius: 16,
-    padding: 16, fontSize: 24, color: '#1F0A3A', textAlign: 'center',
-    borderWidth: 1.5, borderColor: '#E9E6FF', marginBottom: 8,
+    borderRadius: 18,
+    padding: 16,
+    fontSize: 22,
+    color: colors.text,
+    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  inputWrong: {borderColor: '#F43F5E', backgroundColor: '#FFF1F2'},
-  wrongText: {fontSize: 13, color: '#F43F5E', marginBottom: 12},
-  button: {
-    backgroundColor: '#7C3AED', borderRadius: 16,
-    paddingVertical: 16, width: '100%',
-    alignItems: 'center', marginTop: 16,
-    elevation: 3,
-    shadowColor: '#7C3AED', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 10,
+  inputWrong: {
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
-  buttonText: {fontSize: 16, fontWeight: '800', color: '#fff'},
-  cancelButton: {marginTop: 14, padding: 8},
-  cancelText: {fontSize: 14, color: '#D1D5DB'},
+  wrongText: {marginTop: 10, fontSize: 13, color: colors.danger},
+  primaryButton: {
+    marginTop: 18,
+    backgroundColor: colors.text,
+    borderRadius: metrics.buttonRadius,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  primaryButtonText: {fontSize: 16, fontWeight: '800', color: colors.white},
+  secondaryButton: {
+    marginTop: 10,
+    borderRadius: metrics.buttonRadius,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+  },
+  secondaryButtonText: {fontSize: 15, fontWeight: '700', color: colors.text},
 });

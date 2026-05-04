@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
+import {DefaultTheme, NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Platform} from 'react-native';
@@ -9,8 +9,20 @@ import SetupScreen from '@screens/SetupScreen';
 import StatsScreen from '@screens/StatsScreen';
 import BlockedScreen from '@screens/BlockedScreen';
 import OnboardingScreen from '@screens/OnboardingScreen';
+import {colors} from '@theme/ui';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: colors.background,
+    card: colors.background,
+    primary: colors.accent,
+    text: colors.text,
+    border: colors.border,
+  },
+};
 
 export default function RootNavigator() {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
@@ -28,17 +40,21 @@ export default function RootNavigator() {
   if (!initialRoute) return null;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
-          headerStyle: {backgroundColor: '#F6F4FF'},
-          headerTintColor: '#7C3AED',
-          headerTitleStyle: {fontWeight: '800', color: '#1F0A3A'},
-          contentStyle: {backgroundColor: '#F6F4FF'},
+          headerStyle: {backgroundColor: colors.background},
+          headerTintColor: colors.text,
+          headerTitleStyle: {fontWeight: '700', color: colors.text},
+          contentStyle: {backgroundColor: colors.background},
           headerShadowVisible: false,
         }}>
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{title: '시작하기', headerShown: false}} />
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{title: '시작하기', headerShown: false}}
+        />
         <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name="Setup" component={SetupScreen} options={{title: '설정'}} />
         <Stack.Screen name="Stats" component={StatsScreen} options={{title: '통계'}} />

@@ -3,122 +3,157 @@ import {View, Text, StyleSheet, TouchableOpacity, ScrollView} from 'react-native
 import {useTimerStore} from '@store/timerStore';
 import {useAppStore} from '@store/appStore';
 import {TARGET_APPS} from '@constants/apps';
+import {colors, metrics, shadows} from '@theme/ui';
 
 const ALLOWED_OPTIONS = [10, 15, 20, 30, 45, 60];
 const COOLDOWN_OPTIONS = [15, 30, 60, 120];
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
-const TABS = ['기본 설정', '요일별 설정'];
+const TABS = ['기본', '요일별'];
 
 const APP_EMOJIS: Record<string, string> = {
-  youtube: '▶️',
-  instagram: '📷',
-  tiktok: '🎵',
+  youtube: '▶',
+  instagram: '◎',
+  tiktok: '♪',
 };
 
 export default function SetupScreen() {
   const {
-    allowedMinutes, cooldownMinutes,
-    setAllowedMinutes, setCooldownMinutes,
-    daySchedule, setDayOverride,
+    allowedMinutes,
+    cooldownMinutes,
+    setAllowedMinutes,
+    setCooldownMinutes,
+    daySchedule,
+    setDayOverride,
   } = useTimerStore();
   const {enabledAppIds, toggleApp} = useAppStore();
   const [tab, setTab] = useState(0);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>설정 ⚙️</Text>
+      <Text style={styles.eyebrow}>preferences</Text>
+      <Text style={styles.title}>간결한 규칙으로 설정하기</Text>
+      <Text style={styles.subtitle}>핵심 값만 빠르게 바꿀 수 있도록 구조를 줄였습니다.</Text>
 
       <View style={styles.tabRow}>
-        {TABS.map((t, i) => (
+        {TABS.map((label, index) => (
           <TouchableOpacity
-            key={t}
-            style={[styles.tab, tab === i && styles.tabActive]}
-            onPress={() => setTab(i)}>
-            <Text style={[styles.tabText, tab === i && styles.tabTextActive]}>{t}</Text>
+            key={label}
+            style={[styles.tab, tab === index && styles.tabActive]}
+            onPress={() => setTab(index)}>
+            <Text style={[styles.tabText, tab === index && styles.tabTextActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       {tab === 0 && (
         <>
-          <Text style={styles.sectionTitle}>⏱ 기본 허용 시간</Text>
-          <View style={styles.optionRow}>
-            {ALLOWED_OPTIONS.map(min => (
-              <TouchableOpacity
-                key={min}
-                style={[styles.option, allowedMinutes === min && styles.optionActive]}
-                onPress={() => setAllowedMinutes(min)}>
-                <Text style={[styles.optionText, allowedMinutes === min && styles.optionTextActive]}>
-                  {min}분
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.sectionTitle}>❄️ 차단 후 쿨다운</Text>
-          <View style={styles.optionRow}>
-            {COOLDOWN_OPTIONS.map(min => (
-              <TouchableOpacity
-                key={min}
-                style={[styles.option, cooldownMinutes === min && styles.optionActive]}
-                onPress={() => setCooldownMinutes(min)}>
-                <Text style={[styles.optionText, cooldownMinutes === min && styles.optionTextActive]}>
-                  {min >= 60 ? `${min / 60}시간` : `${min}분`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.sectionTitle}>📱 차단 앱 선택</Text>
-          {TARGET_APPS.map(app => {
-            const isEnabled = enabledAppIds.includes(app.id);
-            return (
-              <TouchableOpacity
-                key={app.id}
-                style={[styles.appRow, isEnabled && styles.appRowActive]}
-                onPress={() => toggleApp(app.id)}>
-                <View style={styles.appRowLeft}>
-                  <Text style={styles.appEmoji}>{APP_EMOJIS[app.id] ?? '📦'}</Text>
-                  <Text style={[styles.appName, isEnabled && styles.appNameActive]}>{app.name}</Text>
-                </View>
-                <View style={[styles.toggle, isEnabled && styles.toggleActive]}>
-                  <Text style={[styles.toggleText, isEnabled && styles.toggleTextActive]}>
-                    {isEnabled ? 'ON' : 'OFF'}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>하루 허용 시간</Text>
+              <Text style={styles.sectionMeta}>{allowedMinutes}분</Text>
+            </View>
+            <View style={styles.optionRow}>
+              {ALLOWED_OPTIONS.map(min => (
+                <TouchableOpacity
+                  key={min}
+                  style={[styles.optionChip, allowedMinutes === min && styles.optionChipActive]}
+                  onPress={() => setAllowedMinutes(min)}>
+                  <Text
+                    style={[styles.optionText, allowedMinutes === min && styles.optionTextActive]}>
+                    {min}분
                   </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>차단 후 쿨다운</Text>
+              <Text style={styles.sectionMeta}>
+                {cooldownMinutes >= 60 ? `${cooldownMinutes / 60}시간` : `${cooldownMinutes}분`}
+              </Text>
+            </View>
+            <View style={styles.optionRow}>
+              {COOLDOWN_OPTIONS.map(min => (
+                <TouchableOpacity
+                  key={min}
+                  style={[styles.optionChip, cooldownMinutes === min && styles.optionChipActive]}
+                  onPress={() => setCooldownMinutes(min)}>
+                  <Text
+                    style={[styles.optionText, cooldownMinutes === min && styles.optionTextActive]}>
+                    {min >= 60 ? `${min / 60}시간` : `${min}분`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>차단할 앱</Text>
+              <Text style={styles.sectionMeta}>{enabledAppIds.length} selected</Text>
+            </View>
+            {TARGET_APPS.map(app => {
+              const enabled = enabledAppIds.includes(app.id);
+              return (
+                <TouchableOpacity
+                  key={app.id}
+                  style={[styles.appRow, enabled && styles.appRowActive]}
+                  onPress={() => toggleApp(app.id)}>
+                  <View style={styles.appInfo}>
+                    <Text style={styles.appGlyph}>{APP_EMOJIS[app.id] ?? '•'}</Text>
+                    <Text style={styles.appName}>{app.name}</Text>
+                  </View>
+                  <View style={[styles.appBadge, enabled && styles.appBadgeActive]}>
+                    <Text style={[styles.appBadgeText, enabled && styles.appBadgeTextActive]}>
+                      {enabled ? 'ON' : 'OFF'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </>
       )}
 
       {tab === 1 && (
-        <>
-          <View style={styles.hintBox}>
-            <Text style={styles.hint}>
-              💡 요일별로 다른 시간을 설정할 수 있어요.{'\n'}
-              미설정 시 기본({allowedMinutes}분)이 적용돼요.
-            </Text>
-          </View>
+        <View style={styles.sectionCard}>
+          <Text style={styles.scheduleHint}>
+            미설정 요일은 기본 허용 시간 {allowedMinutes}분을 따릅니다.
+          </Text>
           {DAY_LABELS.map((label, dow) => {
             const override = daySchedule.overrides[dow];
             return (
-              <View key={dow} style={styles.dayRow}>
-                <Text style={styles.dayLabel}>{label}요일</Text>
-                <View style={styles.dayOptions}>
+              <View key={dow} style={styles.dayBlock}>
+                <View style={styles.dayHeader}>
+                  <Text style={styles.dayTitle}>{label}요일</Text>
+                  <Text style={styles.dayMeta}>
+                    {override === null ? '기본값 사용' : `${override}분 적용`}
+                  </Text>
+                </View>
+                <View style={styles.optionRow}>
                   <TouchableOpacity
-                    style={[styles.dayOption, override === null && styles.dayOptionActive]}
+                    style={[styles.smallOptionChip, override === null && styles.optionChipActive]}
                     onPress={() => setDayOverride(dow, null)}>
-                    <Text style={[styles.dayOptionText, override === null && styles.dayOptionTextActive]}>
+                    <Text
+                      style={[
+                        styles.smallOptionText,
+                        override === null && styles.optionTextActive,
+                      ]}>
                       기본
                     </Text>
                   </TouchableOpacity>
                   {ALLOWED_OPTIONS.map(min => (
                     <TouchableOpacity
                       key={min}
-                      style={[styles.dayOption, override === min && styles.dayOptionActive]}
+                      style={[styles.smallOptionChip, override === min && styles.optionChipActive]}
                       onPress={() => setDayOverride(dow, min)}>
-                      <Text style={[styles.dayOptionText, override === min && styles.dayOptionTextActive]}>
+                      <Text
+                        style={[
+                          styles.smallOptionText,
+                          override === min && styles.optionTextActive,
+                        ]}>
                         {min}분
                       </Text>
                     </TouchableOpacity>
@@ -127,71 +162,115 @@ export default function SetupScreen() {
               </View>
             );
           })}
-        </>
+        </View>
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F6F4FF'},
-  content: {padding: 24, paddingBottom: 48},
-  title: {fontSize: 28, fontWeight: '800', color: '#1F0A3A', marginBottom: 20},
+  container: {flex: 1, backgroundColor: colors.background},
+  content: {padding: metrics.screenPadding, paddingBottom: 40},
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accentStrong,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+  title: {fontSize: 32, lineHeight: 36, fontWeight: '800', color: colors.text, letterSpacing: -1},
+  subtitle: {
+    marginTop: 10,
+    marginBottom: 22,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textMuted,
+  },
   tabRow: {
-    flexDirection: 'row', backgroundColor: '#EDE9FE', borderRadius: 16,
-    padding: 5, marginBottom: 28,
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: metrics.pillRadius,
+    padding: 4,
+    marginBottom: 18,
   },
-  tab: {flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 12},
-  tabActive: {
-    backgroundColor: '#7C3AED',
-    elevation: 2,
-    shadowColor: '#7C3AED', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.25, shadowRadius: 6,
+  tab: {flex: 1, borderRadius: metrics.pillRadius, paddingVertical: 12, alignItems: 'center'},
+  tabActive: {backgroundColor: colors.text},
+  tabText: {fontSize: 14, fontWeight: '700', color: colors.textMuted},
+  tabTextActive: {color: colors.white},
+  sectionCard: {
+    backgroundColor: colors.card,
+    borderRadius: metrics.cardRadius,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+    ...shadows.soft,
   },
-  tabText: {fontSize: 14, color: '#9CA3AF', fontWeight: '700'},
-  tabTextActive: {color: '#fff'},
-  sectionTitle: {fontSize: 13, color: '#9CA3AF', marginBottom: 14, marginTop: 6, fontWeight: '700'},
-  optionRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28},
-  option: {
-    borderWidth: 1.5, borderColor: '#E9E6FF', borderRadius: 14,
-    paddingHorizontal: 18, paddingVertical: 12, backgroundColor: '#fff',
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  optionActive: {borderColor: '#7C3AED', backgroundColor: '#F3F0FF'},
-  optionText: {fontSize: 15, color: '#9CA3AF', fontWeight: '600'},
-  optionTextActive: {color: '#7C3AED', fontWeight: '800'},
+  sectionTitle: {fontSize: 18, fontWeight: '700', color: colors.text},
+  sectionMeta: {fontSize: 13, color: colors.textFaint},
+  optionRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 10},
+  optionChip: {
+    borderRadius: metrics.pillRadius,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surfaceMuted,
+  },
+  optionChipActive: {backgroundColor: colors.text},
+  optionText: {fontSize: 14, fontWeight: '700', color: colors.textMuted},
+  optionTextActive: {color: colors.white},
   appRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 12,
-    borderWidth: 1.5, borderColor: 'transparent',
-    elevation: 1,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.04, shadowRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  appRowActive: {borderColor: '#7C3AED', backgroundColor: '#FDFAFF'},
-  appRowLeft: {flexDirection: 'row', alignItems: 'center', gap: 12},
-  appEmoji: {fontSize: 20},
-  appName: {fontSize: 16, color: '#9CA3AF', fontWeight: '700'},
-  appNameActive: {color: '#1F0A3A'},
-  toggle: {
-    backgroundColor: '#F3F4F6', borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 7,
+  appRowActive: {},
+  appInfo: {flexDirection: 'row', alignItems: 'center', gap: 12},
+  appGlyph: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    backgroundColor: colors.surfaceMuted,
+    color: colors.text,
+    fontSize: 18,
+    lineHeight: 36,
   },
-  toggleActive: {backgroundColor: '#7C3AED'},
-  toggleText: {fontSize: 13, fontWeight: '800', color: '#9CA3AF'},
-  toggleTextActive: {color: '#fff'},
-  hintBox: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16,
-    marginBottom: 24,
-    elevation: 1,
-    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.04, shadowRadius: 8,
+  appName: {fontSize: 16, fontWeight: '600', color: colors.text},
+  appBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: metrics.pillRadius,
+    backgroundColor: colors.surfaceMuted,
   },
-  hint: {fontSize: 13, color: '#9CA3AF', lineHeight: 22},
-  dayRow: {marginBottom: 18},
-  dayLabel: {fontSize: 14, color: '#7C3AED', fontWeight: '800', marginBottom: 10},
-  dayOptions: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
-  dayOption: {
-    borderWidth: 1.5, borderColor: '#E9E6FF', borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff',
+  appBadgeActive: {backgroundColor: colors.accentSoft},
+  appBadgeText: {fontSize: 12, fontWeight: '800', color: colors.textMuted},
+  appBadgeTextActive: {color: colors.accentStrong},
+  scheduleHint: {fontSize: 14, lineHeight: 21, color: colors.textMuted, marginBottom: 18},
+  dayBlock: {paddingVertical: 16, borderTopWidth: 1, borderTopColor: colors.border},
+  dayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  dayOptionActive: {borderColor: '#7C3AED', backgroundColor: '#F3F0FF'},
-  dayOptionText: {fontSize: 13, color: '#9CA3AF', fontWeight: '600'},
-  dayOptionTextActive: {color: '#7C3AED', fontWeight: '800'},
+  dayTitle: {fontSize: 16, fontWeight: '700', color: colors.text},
+  dayMeta: {fontSize: 13, color: colors.textFaint},
+  smallOptionChip: {
+    borderRadius: metrics.pillRadius,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: colors.surfaceMuted,
+  },
+  smallOptionText: {fontSize: 13, fontWeight: '700', color: colors.textMuted},
 });
