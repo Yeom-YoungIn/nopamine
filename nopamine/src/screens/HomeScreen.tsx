@@ -13,7 +13,14 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useTimerStore} from '@store/timerStore';
 import {useAppStore} from '@store/appStore';
 import {useStatsStore} from '@store/statsStore';
-import {syncBlockStateToNative, syncWidgetData, syncIsEnabledToNative} from '@modules/blockManager';
+import {
+  getNativeDebugState,
+  NativeDebugState,
+  resetNativeUsageProgress,
+  syncBlockStateToNative,
+  syncWidgetData,
+  syncIsEnabledToNative,
+} from '@modules/blockManager';
 import {colors, metrics, shadows} from '@theme/ui';
 import {RootStackParamList} from '../navigation/types';
 
@@ -26,6 +33,13 @@ const APP_EMOJIS: Record<string, string> = {
   instagram: '◎',
   tiktok: '♪',
 };
+
+function formatSeconds(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
 
 export default function HomeScreen({navigation}: Props) {
   const {
@@ -45,6 +59,7 @@ export default function HomeScreen({navigation}: Props) {
 
   const [devVisible, setDevVisible] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [nativeDebug, setNativeDebug] = useState<NativeDebugState | null>(null);
   const titleTapCount = useRef(0);
   const titleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,12 +73,23 @@ export default function HomeScreen({navigation}: Props) {
   }, [usedMinutes, allowedMinutes, recordToday]);
 
   const remainingMinutes = Math.max(0, allowedMinutes - usedMinutes);
-  const progressRatio = allowedMinutes > 0 ? usedMinutes / allowedMinutes : 0;
-  const percent = Math.min(100, Math.round(progressRatio * 100));
   const enabledApps = getEnabledApps();
   const cooldownRemainMin = cooldownUntil
     ? Math.max(0, Math.ceil((cooldownUntil - now) / 60000))
     : 0;
+  const liveUsedSeconds = nativeDebug?.usedSeconds ?? usedMinutes * 60;
+  const liveRemainingSeconds = nativeDebug?.remainingSeconds ?? remainingMinutes * 60;
+  const liveAllowedSeconds = (nativeDebug?.allowedMinutes ?? allowedMinutes) * 60;
+  const liveProgressRatio = liveAllowedSeconds > 0 ? liveUsedSeconds / liveAllowedSeconds : 0;
+  const livePercent = Math.min(100, Math.round(liveProgressRatio * 100));
+  const currentStateLabel = !isEnabled ? '차단 꺼짐' : isBlocked ? '쿨다운 진행 중' : '사용 가능';
+  const stateGlyph = !isEnabled ? 'OFF' : isBlocked ? 'LOCK' : 'ON';
+  const metricLabel = !isEnabled ? '차단 비활성화' : isBlocked ? '해제까지' : '남은 시간';
+
+  const refreshNativeDebug = async () => {
+    const state = await getNativeDebugState();
+    setNativeDebug(state);
+  };
 
   useEffect(() => {
     if (!cooldownUntil) {
@@ -73,6 +99,23 @@ export default function HomeScreen({navigation}: Props) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [cooldownUntil]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const bootstrapId = setTimeout(() => {
+      void refreshNativeDebug();
+    }, 0);
+    const id = setInterval(() => {
+      void refreshNativeDebug();
+    }, 1000);
+    return () => {
+      clearTimeout(bootstrapId);
+      clearInterval(id);
+    };
+  }, []);
 
   const handleToggle = async (value: boolean) => {
     setEnabled(value);
@@ -92,6 +135,7 @@ export default function HomeScreen({navigation}: Props) {
     }, 1500);
     if (titleTapCount.current >= 3) {
       titleTapCount.current = 0;
+      void refreshNativeDebug();
       setDevVisible(true);
     }
   };
@@ -131,8 +175,10 @@ export default function HomeScreen({navigation}: Props) {
       cooldownUntil: null,
       warningFired: false,
     });
+    resetNativeUsageProgress();
     await syncBlockStateToNative(false, null);
     syncWidgetData(getTodayAllowedMinutes(), getTodayAllowedMinutes(), false, null);
+    await refreshNativeDebug();
   };
 
   return (
@@ -177,40 +223,53 @@ export default function HomeScreen({navigation}: Props) {
             !isEnabled && styles.heroCardMuted,
           ]}>
           <View style={styles.heroTopRow}>
-            <Text style={styles.heroEyebrow}>{isBlocked ? 'cooldown' : 'today focus budget'}</Text>
-            <Text style={[styles.heroState, isBlocked && styles.heroStateBlocked]}>
-              {isBlocked ? 'Blocked' : 'Active'}
-            </Text>
+            <View style={styles.stateBadge}>
+              <Text style={styles.stateGlyph}>{stateGlyph}</Text>
+              <Text style={[styles.heroState, isBlocked && styles.heroStateBlocked]}>
+                {currentStateLabel}
+              </Text>
+            </View>
+            <Text style={styles.heroEyebrow}>{isBlocked ? 'cooldown' : 'today'}</Text>
           </View>
+          <Text style={styles.heroMetricLabel}>{metricLabel}</Text>
           <Text style={[styles.heroValue, isBlocked && styles.heroValueBlocked]}>
-            {isBlocked ? `${cooldownRemainMin}분` : `${remainingMinutes}분`}
-          </Text>
-          <Text style={styles.heroCaption}>
-            {isBlocked
-              ? '다시 열리기까지 잠시 쉬는 시간입니다.'
-              : `${usedMinutes}분 사용 / ${allowedMinutes}분 허용`}
+            {!isEnabled
+              ? '--'
+              : isBlocked
+              ? `${cooldownRemainMin}분`
+              : formatSeconds(liveRemainingSeconds)}
           </Text>
           <View style={styles.progressTrack}>
             <View
               style={[
                 styles.progressFill,
-                {width: `${percent}%` as `${number}%`},
-                percent >= 100 && styles.progressFillAlert,
+                {width: `${livePercent}%` as `${number}%`},
+                livePercent >= 100 && styles.progressFillAlert,
               ]}
             />
           </View>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatLabel}>사용</Text>
-              <Text style={styles.heroStatValue}>{usedMinutes}분</Text>
+              <Text style={styles.heroStatValue}>
+                {isEnabled ? formatSeconds(liveUsedSeconds) : `${usedMinutes}분`}
+              </Text>
             </View>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>남음</Text>
-              <Text style={styles.heroStatValue}>{remainingMinutes}분</Text>
+              <Text style={styles.heroStatLabel}>{isBlocked ? '해제까지' : '남은 시간'}</Text>
+              <Text style={styles.heroStatValue}>
+                {!isEnabled
+                  ? '--'
+                  : isBlocked
+                  ? `${cooldownRemainMin}분`
+                  : formatSeconds(liveRemainingSeconds)}
+              </Text>
             </View>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatLabel}>쿨다운</Text>
-              <Text style={styles.heroStatValue}>{cooldownMinutes}분</Text>
+              <Text style={styles.heroStatLabel}>한도</Text>
+              <Text style={styles.heroStatValue}>
+                {formatSeconds((nativeDebug?.allowedMinutes ?? allowedMinutes) * 60)}
+              </Text>
             </View>
           </View>
         </View>
@@ -274,8 +333,26 @@ export default function HomeScreen({navigation}: Props) {
                 {cooldownUntil ? new Date(cooldownUntil).toLocaleTimeString() : 'null'}
               </Text>
               <Text style={dev.stateText}>platform: {Platform.OS}</Text>
+              <Text style={dev.stateText}>
+                native.currentForegroundPackage: {nativeDebug?.currentForegroundPackage ?? 'null'}
+              </Text>
+              <Text style={dev.stateText}>
+                native.remainingMinutes: {nativeDebug?.remainingMinutes ?? 'n/a'}
+              </Text>
+              <Text style={dev.stateText}>
+                native.allowedMinutes: {nativeDebug?.allowedMinutes ?? 'n/a'}
+              </Text>
+              <Text style={dev.stateText}>
+                native.cooldownMinutes: {nativeDebug?.cooldownMinutes ?? 'n/a'}
+              </Text>
+              <Text style={dev.stateText}>
+                native.enabledPackages: {nativeDebug?.enabledPackages?.join(', ') || '[]'}
+              </Text>
             </View>
 
+            <TouchableOpacity style={dev.btnNeutral} onPress={() => void refreshNativeDebug()}>
+              <Text style={dev.btnText}>네이티브 상태 새로고침</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={dev.btnDanger} onPress={devTriggerBlock}>
               <Text style={dev.btnText}>차단 강제 실행</Text>
             </TouchableOpacity>
@@ -342,8 +419,23 @@ const styles = StyleSheet.create({
   heroTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 18,
+  },
+  stateBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: metrics.pillRadius,
+    backgroundColor: '#FFFFFF12',
+  },
+  stateGlyph: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF99',
+    letterSpacing: 1,
   },
   heroEyebrow: {
     fontSize: 11,
@@ -351,25 +443,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFFB3',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+    marginTop: 6,
   },
   heroState: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.accentSoft,
-    backgroundColor: '#FFFFFF1A',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: metrics.pillRadius,
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.white,
   },
   heroStateBlocked: {color: colors.white},
+  heroMetricLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF99',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
   heroValue: {fontSize: 58, fontWeight: '800', color: colors.white, letterSpacing: -2.4},
   heroValueBlocked: {fontSize: 44},
-  heroCaption: {marginTop: 6, marginBottom: 20, fontSize: 14, lineHeight: 20, color: '#FFFFFFB3'},
   progressTrack: {
     height: 10,
     borderRadius: metrics.pillRadius,
     backgroundColor: '#FFFFFF1F',
     overflow: 'hidden',
+    marginTop: 4,
   },
   progressFill: {
     height: '100%',

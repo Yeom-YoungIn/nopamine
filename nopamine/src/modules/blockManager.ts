@@ -16,6 +16,43 @@ export function syncIsEnabledToNative(isEnabled: boolean) {
   }
 }
 
+export function syncTrackingConfigToNative(
+  allowedMinutes: number,
+  cooldownMinutes: number,
+  enabledPackages: string[],
+) {
+  if (Platform.OS !== 'android') return;
+  if (UsageStatsModule?.syncTrackingConfig) {
+    UsageStatsModule.syncTrackingConfig(allowedMinutes, cooldownMinutes, enabledPackages);
+  }
+}
+
+export interface NativeDebugState {
+  isEnabled: boolean;
+  isBlocked: boolean;
+  cooldownUntil: number;
+  allowedMinutes: number;
+  cooldownMinutes: number;
+  usedSeconds: number;
+  remainingSeconds: number;
+  remainingMinutes: number;
+  currentForegroundPackage: string | null;
+  enabledPackages: string[];
+}
+
+export async function getNativeDebugState(): Promise<NativeDebugState | null> {
+  if (Platform.OS !== 'android') return null;
+  if (!UsageStatsModule?.getDebugState) return null;
+  return UsageStatsModule.getDebugState();
+}
+
+export function resetNativeUsageProgress() {
+  if (Platform.OS !== 'android') return;
+  if (UsageStatsModule?.resetUsageProgress) {
+    UsageStatsModule.resetUsageProgress();
+  }
+}
+
 export async function syncBlockStateToNative(isBlocked: boolean, cooldownUntil: number | null) {
   if (Platform.OS !== 'android') return;
   await AsyncStorage.setItem(

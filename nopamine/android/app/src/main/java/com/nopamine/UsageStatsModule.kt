@@ -1,17 +1,20 @@
 package com.nopamine
 
 import android.app.AppOpsManager
-import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import com.facebook.react.bridge.*
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class UsageStatsModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
+
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     override fun getName() = "UsageStatsModule"
 
@@ -85,25 +88,16 @@ class UsageStatsModule(private val reactContext: ReactApplicationContext) :
     /** 오늘 특정 앱의 사용 시간(분) 조회 */
     @ReactMethod
     fun getUsageMinutesToday(packageName: String, promise: Promise) {
-        if (!hasUsageStatsPermissionSync()) {
-            promise.reject("PERMISSION_DENIED", "PACKAGE_USAGE_STATS permission not granted")
+        val prefs = reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE)
+        val enabledPackages = prefs.getStringSet("enabledPackages", emptySet()) ?: emptySet()
+        if (packageName !in enabledPackages) {
+            promise.resolve(0)
             return
         }
-        val usm = reactContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val stats = usm.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            cal.timeInMillis,
-            System.currentTimeMillis()
-        )
-        val totalMs = stats?.filter { it.packageName == packageName }
-            ?.sumOf { it.totalTimeInForeground } ?: 0L
-        promise.resolve((totalMs / 60000).toInt())
+
+        resetForNewDayIfNeeded(prefs)
+        val usedSeconds = prefs.getInt("usedSeconds", 0)
+        promise.resolve(usedSeconds / 60)
     }
 
     /** JS → SharedPreferences 차단 상태 동기화 (AccessibilityService가 읽음) */
@@ -121,6 +115,66 @@ class UsageStatsModule(private val reactContext: ReactApplicationContext) :
         reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE).edit()
             .putBoolean("isEnabled", isEnabled)
             .apply()
+    }
+
+    /** 사용량 추적 설정을 SharedPreferences에 저장 */
+    @ReactMethod
+    fun syncTrackingConfig(
+        allowedMinutes: Int,
+        cooldownMinutes: Int,
+        enabledPackages: ReadableArray
+    ) {
+        val prefs = reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE)
+        val packages = mutableSetOf<String>()
+        for (i in 0 until enabledPackages.size()) {
+            enabledPackages.getString(i)?.let { packages.add(it) }
+        }
+
+        prefs.edit()
+            .putInt("allowedMinutes", allowedMinutes)
+            .putInt("cooldownMinutes", cooldownMinutes)
+            .putStringSet("enabledPackages", packages)
+            .putInt("remainingSeconds", maxOf(0, allowedMinutes * 60 - prefs.getInt("usedSeconds", 0)))
+            .putInt("remainingMinutes", maxOf(0, allowedMinutes * 60 - prefs.getInt("usedSeconds", 0)) / 60)
+            .apply()
+    }
+
+    @ReactMethod
+    fun resetUsageProgress() {
+        val prefs = reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE)
+        val allowedMinutes = prefs.getInt("allowedMinutes", 30)
+        prefs.edit()
+            .putString("trackingDate", todayString())
+            .putInt("usedSeconds", 0)
+            .putInt("remainingSeconds", allowedMinutes * 60)
+            .putInt("remainingMinutes", allowedMinutes)
+            .putBoolean("isBlocked", false)
+            .putLong("cooldownUntil", 0L)
+            .putLong("lastTrackedAt", 0L)
+            .apply()
+    }
+
+    @ReactMethod
+    fun getDebugState(promise: Promise) {
+        val prefs = reactContext.getSharedPreferences("nopamine", Context.MODE_PRIVATE)
+        resetForNewDayIfNeeded(prefs)
+        val result = Arguments.createMap().apply {
+            putBoolean("isEnabled", prefs.getBoolean("isEnabled", false))
+            putBoolean("isBlocked", prefs.getBoolean("isBlocked", false))
+            putDouble("cooldownUntil", prefs.getLong("cooldownUntil", 0L).toDouble())
+            putInt("allowedMinutes", prefs.getInt("allowedMinutes", 30))
+            putInt("cooldownMinutes", prefs.getInt("cooldownMinutes", 30))
+            putInt("usedSeconds", prefs.getInt("usedSeconds", 0))
+            putInt("remainingSeconds", prefs.getInt("remainingSeconds", prefs.getInt("allowedMinutes", 30) * 60))
+            putInt("remainingMinutes", prefs.getInt("remainingMinutes", 0))
+            putString("currentForegroundPackage", prefs.getString("currentForegroundPackage", null))
+            val packages = Arguments.createArray()
+            (prefs.getStringSet("enabledPackages", emptySet()) ?: emptySet()).forEach {
+                packages.pushString(it)
+            }
+            putArray("enabledPackages", packages)
+        }
+        promise.resolve(result)
     }
 
     /** 위젯 표시용 데이터 저장 + 위젯 강제 갱신 */
@@ -152,5 +206,25 @@ class UsageStatsModule(private val reactContext: ReactApplicationContext) :
             )
         }
         return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    private fun resetForNewDayIfNeeded(prefs: android.content.SharedPreferences) {
+        val today = todayString()
+        if (prefs.getString("trackingDate", null) == today) return
+
+        val allowedMinutes = prefs.getInt("allowedMinutes", 30)
+        prefs.edit()
+            .putString("trackingDate", today)
+            .putInt("usedSeconds", 0)
+            .putInt("remainingSeconds", allowedMinutes * 60)
+            .putInt("remainingMinutes", allowedMinutes)
+            .putBoolean("isBlocked", false)
+            .putLong("cooldownUntil", 0L)
+            .putLong("lastTrackedAt", 0L)
+            .apply()
+    }
+
+    private fun todayString(): String {
+        return dateFormatter.format(Date())
     }
 }
