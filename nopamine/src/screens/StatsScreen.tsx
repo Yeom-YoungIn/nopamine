@@ -20,25 +20,23 @@ export default function StatsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>통계</Text>
+      <Text style={styles.title}>통계 📊</Text>
 
-      {/* 요약 카드 */}
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryValue}>{todayPercent}%</Text>
           <Text style={styles.summaryLabel}>오늘 사용률</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{weekGoalDays}/7</Text>
+          <Text style={[styles.summaryValue, styles.summaryValueGreen]}>{weekGoalDays}/7</Text>
           <Text style={styles.summaryLabel}>이번 주 목표</Text>
         </View>
         <View style={styles.summaryCard}>
-          <Text style={[styles.summaryValue, {color: '#f97316'}]}>🔥{streak}</Text>
+          <Text style={[styles.summaryValue, styles.summaryValueOrange]}>🔥{streak}</Text>
           <Text style={styles.summaryLabel}>연속 달성</Text>
         </View>
       </View>
 
-      {/* 주간 막대 그래프 */}
       <View style={styles.card}>
         <Text style={styles.cardLabel}>최근 7일 사용량</Text>
         <View style={styles.barChart}>
@@ -68,9 +66,8 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      {/* 오늘 상세 */}
       <View style={styles.card}>
-        <Text style={styles.cardLabel}>오늘</Text>
+        <Text style={styles.cardLabel}>오늘 사용 현황</Text>
         <View style={styles.progressBg}>
           <View
             style={[
@@ -80,42 +77,52 @@ export default function StatsScreen() {
             ]}
           />
         </View>
-        <Text style={styles.progressDetail}>
-          {usedMinutes}분 사용 / {allowedMinutes}분 허용
-        </Text>
+        <View style={styles.progressDetailRow}>
+          <Text style={styles.progressDetail}>{usedMinutes}분 사용</Text>
+          <Text style={styles.progressDetail}>{allowedMinutes}분 허용</Text>
+        </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0f0f0f'},
+  container: {flex: 1, backgroundColor: '#F6F4FF'},
   content: {padding: 24, paddingBottom: 40},
-  title: {fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 20},
+  title: {fontSize: 28, fontWeight: '800', color: '#1F0A3A', marginBottom: 20},
   summaryRow: {flexDirection: 'row', gap: 10, marginBottom: 16},
   summaryCard: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
+    flex: 1, backgroundColor: '#fff',
+    borderRadius: 18, padding: 16, alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 8,
   },
-  summaryValue: {fontSize: 22, fontWeight: '800', color: '#4ade80', marginBottom: 4},
-  summaryLabel: {fontSize: 11, color: '#555', textAlign: 'center'},
-  card: {backgroundColor: '#1a1a1a', borderRadius: 16, padding: 20, marginBottom: 16},
-  cardLabel: {fontSize: 13, color: '#666', marginBottom: 16},
+  summaryValue: {fontSize: 22, fontWeight: '800', color: '#7C3AED', marginBottom: 6},
+  summaryValueGreen: {color: '#10B981'},
+  summaryValueOrange: {color: '#F97316'},
+  summaryLabel: {fontSize: 11, color: '#9CA3AF', textAlign: 'center', fontWeight: '600'},
+  card: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 16,
+    elevation: 1,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 8,
+  },
+  cardLabel: {fontSize: 13, color: '#9CA3AF', marginBottom: 18, fontWeight: '600'},
   barChart: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140},
   barCol: {alignItems: 'center', flex: 1},
-  barMinutes: {fontSize: 9, color: '#555', marginBottom: 4, height: 12},
+  barMinutes: {fontSize: 9, color: '#D1D5DB', marginBottom: 4, height: 12},
   barWrapper: {height: 100, justifyContent: 'flex-end'},
-  bar: {width: 24, borderRadius: 4},
-  barGood: {backgroundColor: '#4ade80'},
-  barBad: {backgroundColor: '#f87171'},
-  barEmpty: {backgroundColor: '#2a2a2a'},
-  barLabel: {fontSize: 12, color: '#555', marginTop: 6},
-  barLabelToday: {color: '#fff', fontWeight: '700'},
-  progressBg: {height: 10, backgroundColor: '#2a2a2a', borderRadius: 5, overflow: 'hidden', marginBottom: 8},
-  progressFill: {height: '100%', backgroundColor: '#4ade80', borderRadius: 5},
-  progressOver: {backgroundColor: '#f87171'},
-  progressDetail: {fontSize: 13, color: '#555'},
+  bar: {width: 22, borderRadius: 6},
+  barGood: {backgroundColor: '#7C3AED'},
+  barBad: {backgroundColor: '#F43F5E'},
+  barEmpty: {backgroundColor: '#F3F0FF'},
+  barLabel: {fontSize: 12, color: '#D1D5DB', marginTop: 8},
+  barLabelToday: {color: '#7C3AED', fontWeight: '800'},
+  progressBg: {
+    height: 12, backgroundColor: '#F3F0FF', borderRadius: 8,
+    overflow: 'hidden', marginBottom: 10,
+  },
+  progressFill: {height: '100%', backgroundColor: '#7C3AED', borderRadius: 8},
+  progressOver: {backgroundColor: '#F43F5E'},
+  progressDetailRow: {flexDirection: 'row', justifyContent: 'space-between'},
+  progressDetail: {fontSize: 13, color: '#9CA3AF'},
 });

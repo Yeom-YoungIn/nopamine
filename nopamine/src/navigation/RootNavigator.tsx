@@ -32,13 +32,14 @@ export default function RootNavigator() {
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
-          headerStyle: {backgroundColor: '#0f0f0f'},
-          headerTintColor: '#fff',
-          headerTitleStyle: {fontWeight: '700'},
-          contentStyle: {backgroundColor: '#0f0f0f'},
+          headerStyle: {backgroundColor: '#F6F4FF'},
+          headerTintColor: '#7C3AED',
+          headerTitleStyle: {fontWeight: '800', color: '#1F0A3A'},
+          contentStyle: {backgroundColor: '#F6F4FF'},
+          headerShadowVisible: false,
         }}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{title: '시작하기', headerShown: false}} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{title: 'Nopamine'}} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name="Setup" component={SetupScreen} options={{title: '설정'}} />
         <Stack.Screen name="Stats" component={StatsScreen} options={{title: '통계'}} />
         <Stack.Screen

@@ -48,10 +48,15 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
   return (
     <View style={styles.overlay}>
       <View style={styles.card}>
+        <View style={styles.badgeWrap}>
+          <Text style={styles.badge}>🧮 수학 챌린지</Text>
+        </View>
         <Text style={styles.title}>잠금 해제</Text>
-        <Text style={styles.desc}>문제를 풀면 30분 쿨다운을 건너뛸 수 있어요.</Text>
+        <Text style={styles.desc}>정답을 맞히면 쿨다운을 건너뛸 수 있어요!</Text>
 
-        <Text style={styles.question}>{problem.question}</Text>
+        <View style={styles.questionBox}>
+          <Text style={styles.question}>{problem.question}</Text>
+        </View>
 
         <TextInput
           style={[styles.input, wrong && styles.inputWrong]}
@@ -59,12 +64,12 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
           value={input}
           onChangeText={setInput}
           placeholder="정답 입력"
-          placeholderTextColor="#555"
+          placeholderTextColor="#D1D5DB"
           maxLength={6}
           returnKeyType="done"
           onSubmitEditing={submit}
         />
-        {wrong && <Text style={styles.wrongText}>틀렸습니다. 다시 시도하세요.</Text>}
+        {wrong && <Text style={styles.wrongText}>😅 틀렸어요, 다시 시도해봐요!</Text>}
 
         <TouchableOpacity style={styles.button} onPress={submit}>
           <Text style={styles.buttonText}>확인</Text>
@@ -80,29 +85,44 @@ export default function MathChallenge({onSolve, onCancel}: Props) {
 const styles = StyleSheet.create({
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center', alignItems: 'center',
     zIndex: 100,
   },
   card: {
-    backgroundColor: '#1a1a1a', borderRadius: 20, padding: 28,
+    backgroundColor: '#fff', borderRadius: 28, padding: 28,
     width: '88%', alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.15, shadowRadius: 24,
   },
-  title: {fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 8},
-  desc: {fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 18},
-  question: {fontSize: 36, fontWeight: '800', color: '#4ade80', marginBottom: 24},
+  badgeWrap: {marginBottom: 16},
+  badge: {
+    fontSize: 13, color: '#7C3AED', fontWeight: '700',
+    backgroundColor: '#F3F0FF', paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, overflow: 'hidden',
+  },
+  title: {fontSize: 22, fontWeight: '800', color: '#1F0A3A', marginBottom: 8},
+  desc: {fontSize: 13, color: '#9CA3AF', textAlign: 'center', marginBottom: 24, lineHeight: 18},
+  questionBox: {
+    backgroundColor: '#F6F4FF', borderRadius: 18, paddingVertical: 20,
+    paddingHorizontal: 32, marginBottom: 24, width: '100%', alignItems: 'center',
+  },
+  question: {fontSize: 38, fontWeight: '800', color: '#7C3AED'},
   input: {
-    width: '100%', backgroundColor: '#2a2a2a', borderRadius: 12,
-    padding: 16, fontSize: 24, color: '#fff', textAlign: 'center',
-    borderWidth: 1, borderColor: '#333', marginBottom: 8,
+    width: '100%', backgroundColor: '#F9FAFB', borderRadius: 16,
+    padding: 16, fontSize: 24, color: '#1F0A3A', textAlign: 'center',
+    borderWidth: 1.5, borderColor: '#E9E6FF', marginBottom: 8,
   },
-  inputWrong: {borderColor: '#f87171'},
-  wrongText: {fontSize: 13, color: '#f87171', marginBottom: 12},
+  inputWrong: {borderColor: '#F43F5E', backgroundColor: '#FFF1F2'},
+  wrongText: {fontSize: 13, color: '#F43F5E', marginBottom: 12},
   button: {
-    backgroundColor: '#4ade80', borderRadius: 12,
-    paddingVertical: 14, paddingHorizontal: 40, marginTop: 16,
+    backgroundColor: '#7C3AED', borderRadius: 16,
+    paddingVertical: 16, width: '100%',
+    alignItems: 'center', marginTop: 16,
+    elevation: 3,
+    shadowColor: '#7C3AED', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 10,
   },
-  buttonText: {fontSize: 16, fontWeight: '800', color: '#000'},
-  cancelButton: {marginTop: 12, padding: 8},
-  cancelText: {fontSize: 14, color: '#555'},
+  buttonText: {fontSize: 16, fontWeight: '800', color: '#fff'},
+  cancelButton: {marginTop: 14, padding: 8},
+  cancelText: {fontSize: 14, color: '#D1D5DB'},
 });
