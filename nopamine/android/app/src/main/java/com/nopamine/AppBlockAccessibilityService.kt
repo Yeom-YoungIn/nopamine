@@ -1,7 +1,10 @@
 package com.nopamine
 
 import android.accessibilityservice.AccessibilityService
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -18,6 +21,14 @@ class AppBlockAccessibilityService : AccessibilityService() {
     private var currentPackage: String? = null
     private var checkerRunning = false
     private var lastBlockedAt = 0L
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                stopChecker()
+            }
+        }
+    }
 
     private val usageChecker = object : Runnable {
         override fun run() {
@@ -110,6 +121,11 @@ class AppBlockAccessibilityService : AccessibilityService() {
         }
     }
 
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+    }
+
     override fun onInterrupt() {
         stopChecker()
     }
@@ -117,6 +133,7 @@ class AppBlockAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         stopChecker()
+        unregisterReceiver(screenOffReceiver)
     }
 
     private fun startChecker() {
