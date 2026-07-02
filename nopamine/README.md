@@ -1,97 +1,22 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# nopamine
 
-# Getting Started
+## 프로젝트 개요
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+`nopamine`은 YouTube, Instagram, TikTok 같은 숏폼 중심 앱의 사용 시간을 관리하기 위한 React Native 모바일 앱입니다. 사용자는 하루 허용 시간, 차단 대상 앱, 차단 후 쿨다운 시간을 직접 설정할 수 있고, 앱은 설정된 시간이 지나면 해당 앱 사용을 제한하는 흐름으로 동작합니다.
 
-## Step 1: Start Metro
+이 프로젝트는 숏폼 콘텐츠를 무심코 오래 소비하게 되는 사용자를 대상으로 합니다. 코드상으로는 앱별 사용 시간 추적, 시간 초과 시 차단 상태 전환, 5분 전 알림, 주간 사용 기록과 연속 달성일 확인 같은 기능이 구현되어 있습니다.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+기획 의도는 “완전히 복잡한 생산성 도구”보다는 “간단한 규칙으로 집중 흐름을 유지하는 도구”에 가깝습니다. 온보딩, 설정, 통계 화면 모두 핵심 값만 빠르게 조정하거나 확인할 수 있도록 비교적 단순한 구조로 설계되어 있으며, 현재 권한 흐름과 차단 로직은 Android 중심으로 구현되어 있습니다.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## 기술 스택
 
-```sh
-# Using npm
-npm start
+- Mobile App: React Native, TypeScript
+- Navigation: React Navigation
+- State / Storage: Zustand, AsyncStorage
+- Native Feature: Android Usage Stats / Accessibility / Overlay 연동, iOS Screen Time 연동 모듈
+- Notification: Notifee
+- Test: Jest, React Test Renderer
 
-# OR using Yarn
-yarn start
-```
+## 참고 링크
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- React Native: [https://reactnative.dev](https://reactnative.dev)
